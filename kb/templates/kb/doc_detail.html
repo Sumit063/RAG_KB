@@ -1,0 +1,20 @@
+﻿{% extends "kb/base.html" %}
+
+{% block title %}Document - RAG KB{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1>{{ doc.title }}</h1>
+  <p><strong>Status:</strong> <span id="doc-status-{{ doc.id }}"><span class="status status-{{ doc.status|lower }}">{{ doc.status }}</span></span></p>
+  <p><strong>Chunks:</strong> <span id="doc-chunks-{{ doc.id }}">{{ doc.chunks_count }}</span></p>
+  <p><strong>Uploaded:</strong> {{ doc.created_at }}</p>
+  <p><strong>Last indexed:</strong> {{ doc.last_indexed_at|default:"-" }}</p>
+  <p><strong>File:</strong> <a href="{{ doc.file.url }}">{{ doc.file.name }}</a></p>
+
+  <div class="actions-row">
+    <button class="index-btn" data-doc-id="{{ doc.id }}">Reindex</button>
+    <a class="button-link" href="{% url 'ask' %}">Ask a Question</a>
+  </div>
+  <div id="index-message" class="message"></div>
+</section>
+{% endblock %}

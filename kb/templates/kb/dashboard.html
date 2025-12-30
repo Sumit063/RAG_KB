@@ -1,0 +1,57 @@
+﻿{% extends "kb/base.html" %}
+
+{% block title %}Dashboard - RAG KB{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1>Upload Document</h1>
+  <p class="subtle">Upload a PDF, TXT, or MD file. After upload, click Index to process it.</p>
+  <form class="upload-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label>
+      Title
+      <input type="text" name="title" required />
+    </label>
+    <label>
+      File (PDF, TXT, MD)
+      <input type="file" name="file" required />
+    </label>
+    <button type="submit">Upload</button>
+  </form>
+  <div id="upload-message" class="message"></div>
+</section>
+
+<section class="card">
+  <h2>Documents</h2>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Chunks</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in docs %}
+      <tr>
+        <td>{{ doc.title }}</td>
+        <td id="doc-status-{{ doc.id }}">
+          <span class="status status-{{ doc.status|lower }}">{{ doc.status }}</span>
+        </td>
+        <td id="doc-chunks-{{ doc.id }}">{{ doc.chunks_count }}</td>
+        <td class="actions">
+          <a href="{% url 'doc_detail' doc.id %}">View</a>
+          <button class="index-btn" data-doc-id="{{ doc.id }}">Index</button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">No documents yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div id="index-message" class="message"></div>
+</section>
+{% endblock %}

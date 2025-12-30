@@ -1,0 +1,50 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}RAG KB{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'kb/styles.css' %}" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="logo">RAG KB</div>
+    <nav class="nav-links">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <a href="{% url 'ask' %}">Ask</a>
+      {% if request.user.is_superuser %}
+        <a href="{% url 'admin:index' %}">Admin</a>
+      {% endif %}
+    </nav>
+    <div class="user-actions">
+      {% if request.user.is_authenticated %}
+        <button type="button" class="ghost-button theme-toggle" id="theme-toggle">Theme</button>
+        <div class="user-menu" id="user-menu">
+          <button type="button" class="user-menu-button" id="user-menu-button" aria-expanded="false">
+            <span class="user-chip">{{ request.user.username }}</span>
+            <span class="caret">▾</span>
+          </button>
+          <div class="user-menu-panel" id="user-menu-panel">
+            <a href="{% url 'profile' %}">Profile</a>
+            <a href="{% url 'settings' %}">Settings</a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="ghost-button danger">Sign out</button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    window.API_TOKEN = "{{ api_token|default:''|escapejs }}";
+  </script>
+  <script src="{% static 'kb/app.js' %}"></script>
+</body>
+</html>

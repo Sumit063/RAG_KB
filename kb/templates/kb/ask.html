@@ -1,0 +1,53 @@
+﻿{% extends "kb/base.html" %}
+
+{% block title %}Ask - RAG KB{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1>Ask a Question</h1>
+  <p class="subtle">Questions are answered only from indexed documents and include citations like [1].</p>
+  <form id="ask-form">
+    <label class="toggle">
+      <input type="checkbox" id="doc-all-toggle" checked />
+      <span>Search all indexed documents</span>
+    </label>
+    <label>
+      Choose documents (indexed only)
+      <select id="doc-select" multiple size="6" disabled></select>
+    </label>
+    <div id="doc-select-message" class="message"></div>
+    <label>
+      Question
+      <textarea name="question" id="question" rows="4" required></textarea>
+    </label>
+    <label>
+      Top K
+      <input type="number" id="top-k" min="1" placeholder="6" />
+    </label>
+    <label class="toggle">
+      <input type="checkbox" id="explain-toggle" />
+      <span>Show answer trace</span>
+    </label>
+    <button type="submit">Ask</button>
+  </form>
+  <div id="ask-message" class="message"></div>
+</section>
+
+<section class="card">
+  <h2>Answer</h2>
+  <div id="answer" class="answer"></div>
+</section>
+
+<section class="card trace-panel" id="trace-panel" hidden>
+  <div class="trace-header">
+    <h2>Answer Trace</h2>
+    <div id="trace-summary" class="trace-summary"></div>
+  </div>
+  <div id="trace-steps" class="trace-steps"></div>
+</section>
+
+<section class="card">
+  <h2>Sources</h2>
+  <div id="sources" class="sources"></div>
+</section>
+{% endblock %}

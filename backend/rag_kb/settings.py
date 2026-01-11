@@ -1,6 +1,7 @@
 ﻿import os
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -61,18 +62,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'rag_kb.wsgi.application'
 ASGI_APPLICATION = 'rag_kb.asgi.application'
 
-SQLITE_PATH = os.getenv('SQLITE_PATH')
-if SQLITE_PATH:
-    DB_NAME = SQLITE_PATH
-else:
-    DB_NAME = BASE_DIR / 'db.sqlite3' if DEBUG else '/tmp/db.sqlite3'
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DB_NAME,
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=False),
     }
-}
+else:
+    SQLITE_PATH = os.getenv('SQLITE_PATH')
+    if SQLITE_PATH:
+        DB_NAME = SQLITE_PATH
+    else:
+        DB_NAME = BASE_DIR / 'db.sqlite3' if DEBUG else '/tmp/db.sqlite3'
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': DB_NAME,
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -130,9 +136,6 @@ DISCARD_RAW_TEXT_AFTER_INDEX = os.getenv('DISCARD_RAW_TEXT_AFTER_INDEX', '0') ==
 CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', 900))
 CHUNK_OVERLAP = int(os.getenv('CHUNK_OVERLAP', 150))
 TOP_K_DEFAULT = int(os.getenv('TOP_K_DEFAULT', 6))
-CHROMA_PATH = os.getenv('CHROMA_PATH')
-if not CHROMA_PATH:
-    CHROMA_PATH = str(BASE_DIR / 'chroma_store') if DEBUG else '/tmp/chroma_store'
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', REDIS_URL)

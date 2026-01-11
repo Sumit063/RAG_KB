@@ -6,10 +6,10 @@
       - "8000:8000"
     volumes:
       - ./media:/app/media
-      - ./chroma_store:/app/chroma_store
       - ./db:/app/db
     depends_on:
       - redis
+      - postgres
   worker:
     build: .
     env_file: .env
@@ -18,9 +18,19 @@
       - RUN_MIGRATIONS=0
     volumes:
       - ./media:/app/media
-      - ./chroma_store:/app/chroma_store
       - ./db:/app/db
     depends_on:
       - redis
+      - postgres
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: rag_kb
+      POSTGRES_USER: rag_kb
+      POSTGRES_PASSWORD: rag_kb
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
   redis:
     image: redis:7-alpine

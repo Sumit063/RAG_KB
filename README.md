@@ -13,15 +13,15 @@ Production-style Django backend with a separate React UI. Authenticated users up
 cd backend
 cp .env.example .env
 # Set OPENAI_API_KEY in backend/.env
+# DATABASE_URL defaults to the local Postgres service in docker-compose.yml
 
 docker compose up --build
 ```
 
-Run migrations and create a user:
+Migrations run automatically on container start. If you want to re-run them manually:
 
 ```bash
 docker compose run --rm web python manage.py migrate
-docker compose run --rm web python manage.py createsuperuser
 ```
 
 API runs at http://localhost:8000
@@ -39,12 +39,11 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-Update backend/.env with local paths and Redis:
+Update backend/.env with Postgres and Redis:
 
 ```
 OPENAI_API_KEY=your-openai-key
-CHROMA_PATH=./chroma_store
-SQLITE_PATH=./db/db.sqlite3
+DATABASE_URL=postgresql://rag_kb:rag_kb@localhost:5432/rag_kb
 MEDIA_ROOT=./media
 REDIS_URL=redis://localhost:6379/0
 CELERY_BROKER_URL=redis://localhost:6379/0
@@ -146,12 +145,11 @@ curl -X POST http://localhost:8000/api/ask/ \
 
 - RAG guardrail: if the retrieved context is insufficient, the model responds exactly:
   "I don't have enough information in the indexed documents."
-- Vector store is local ChromaDB at `CHROMA_PATH`.
+- Vector store uses PostgreSQL + pgvector. Ensure your Postgres instance has the `vector` extension enabled.
 
-## Optional: pgvector later
+## Aiven Postgres (production)
 
-You can replace ChromaDB with PostgreSQL + pgvector by:
-
-1) Add a Postgres service to backend/docker-compose.yml
-2) Replace backend/kb/services/vector_store.py with pgvector queries
-3) Update backend/.env and settings to point at Postgres
+1) Create a Postgres service in Aiven.
+2) Enable `pgvector` (Aiven supports it on most plans).
+3) Set `DATABASE_URL` in Render to the Aiven connection string.
+4) Deploy. Migrations and the demo superuser are created automatically on boot.

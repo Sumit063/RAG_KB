@@ -27,6 +27,7 @@ celerybeat.pid
 backend/db/*
 backend/chroma_store/*
 backend/media/*
+backend/postgres_data/*
 !backend/db/.gitkeep
 !backend/chroma_store/.gitkeep
 !backend/media/.gitkeep

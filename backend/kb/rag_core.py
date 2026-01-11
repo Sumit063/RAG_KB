@@ -22,6 +22,7 @@ def _batch_iter(items: List[str], batch_size: int):
 
 
 def index_document(document: Document) -> dict:
+    use_pgvector = vector_store.uses_pgvector()
     if document.raw_text:
         text = document.raw_text
     elif document.file:
@@ -32,7 +33,8 @@ def index_document(document: Document) -> dict:
 
     existing_ids = list(document.chunks.values_list('vector_id', flat=True))
     if existing_ids:
-        vector_store.delete_chunks(existing_ids)
+        if not use_pgvector:
+            vector_store.delete_chunks(existing_ids)
         document.chunks.all().delete()
 
     chunk_records = []
@@ -58,14 +60,22 @@ def index_document(document: Document) -> dict:
             vector_id=vector_id,
         ))
 
+    embeddings = []
     if ids:
-        for batch_docs, batch_ids, batch_metas in zip(
-            _batch_iter(documents, 64),
-            _batch_iter(ids, 64),
-            _batch_iter(metadatas, 64),
-        ):
-            batch_embeddings = llm_client.embed_texts(batch_docs)
-            vector_store.upsert_chunks(batch_ids, batch_embeddings, batch_docs, batch_metas)
+        for batch_docs in _batch_iter(documents, 64):
+            embeddings.extend(llm_client.embed_texts(batch_docs))
+
+        if use_pgvector:
+            for chunk_record, embedding in zip(chunk_records, embeddings):
+                chunk_record.embedding = embedding
+        else:
+            for batch_docs, batch_ids, batch_metas, batch_embeddings in zip(
+                _batch_iter(documents, 64),
+                _batch_iter(ids, 64),
+                _batch_iter(metadatas, 64),
+                _batch_iter(embeddings, 64),
+            ):
+                vector_store.upsert_chunks(batch_ids, batch_embeddings, batch_docs, batch_metas)
 
     with transaction.atomic():
         if chunk_records:

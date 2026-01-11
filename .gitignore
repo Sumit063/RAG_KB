@@ -42,3 +42,7 @@ frontend/.env.*
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local-only deployment notes
+DEPLOYMENT_PLAN.local.md
+CICD_PIPELINE.local.md

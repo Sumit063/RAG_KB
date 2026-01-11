@@ -1,6 +1,7 @@
 ﻿from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect, render
+from django.conf import settings
 from rest_framework.authtoken.models import Token
 
 
@@ -18,6 +19,8 @@ def _app_context(user):
         'api_token': _api_token(user),
         'username': user.username,
         'is_superuser': user.is_superuser,
+        'enable_reindex': settings.ENABLE_REINDEX,
+        'store_uploads_on_disk': settings.STORE_UPLOADS_ON_DISK,
     }
 
 

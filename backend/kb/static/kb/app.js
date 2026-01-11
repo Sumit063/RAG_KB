@@ -6,6 +6,8 @@
   const USERNAME = window.USERNAME || '';
   const IS_SUPERUSER = !!window.IS_SUPERUSER;
   const CSRF_TOKEN = window.CSRF_TOKEN || '';
+  const APP_CONFIG = window.APP_CONFIG || {};
+  const ENABLE_REINDEX = APP_CONFIG.enableReindex !== false;
 
   function apiFetch(url, options) {
     const opts = options || {};
@@ -328,8 +330,10 @@
               h(
                 'tbody',
                 null,
-                docs.map((doc) =>
-                  h(
+                docs.map((doc) => {
+                  const canIndex = doc.status !== 'INDEXED' || ENABLE_REINDEX;
+                  const indexLabel = doc.status === 'INDEXED' ? 'Re-index' : 'Index';
+                  return h(
                     'tr',
                     { key: doc.id },
                     h('td', null, doc.title),
@@ -346,19 +350,21 @@
                           { className: 'btn btn-ghost btn-small', href: '/docs/' + doc.id + '/' },
                           'View'
                         ),
-                        h(
-                          'button',
-                          {
-                            className: 'btn btn-secondary btn-small',
-                            type: 'button',
-                            onClick: () => handleIndex(doc.id),
-                          },
-                          'Index'
-                        )
+                        canIndex
+                          ? h(
+                              'button',
+                              {
+                                className: 'btn btn-secondary btn-small',
+                                type: 'button',
+                                onClick: () => handleIndex(doc.id),
+                              },
+                              indexLabel
+                            )
+                          : null
                       )
                     )
-                  )
-                )
+                  );
+                })
               )
             )
       )
@@ -414,6 +420,11 @@
       return h('div', { className: 'page' }, h(PageHeader, { title: 'Document' }), error && h('div', { className: 'notice error' }, error));
     }
 
+    const canIndex = doc.status !== 'INDEXED' || ENABLE_REINDEX;
+    const indexLabel = doc.status === 'INDEXED' ? 'Re-index' : 'Index';
+    const fileLabel = doc.original_filename || doc.file || 'Unavailable';
+    const fileUrl = doc.file_url || '';
+
     return h(
       'div',
       { className: 'page' },
@@ -423,11 +434,13 @@
         actions: h(
           'div',
           { className: 'page-actions' },
-          h(
-            'button',
-            { className: 'btn btn-secondary', type: 'button', onClick: handleIndex },
-            'Re-index'
-          ),
+          canIndex
+            ? h(
+                'button',
+                { className: 'btn btn-secondary', type: 'button', onClick: handleIndex },
+                indexLabel
+              )
+            : null,
           h('a', { className: 'btn btn-ghost', href: '/ask/' }, 'Ask')
         ),
       }),
@@ -439,7 +452,9 @@
           h('div', null, h('div', { className: 'detail-label' }, 'Chunks'), h('div', { className: 'detail-value' }, doc.chunks_count)),
           h('div', null, h('div', { className: 'detail-label' }, 'Uploaded'), h('div', { className: 'detail-value' }, doc.created_at || '-')),
           h('div', null, h('div', { className: 'detail-label' }, 'Last indexed'), h('div', { className: 'detail-value' }, doc.last_indexed_at || '-')),
-          h('div', null, h('div', { className: 'detail-label' }, 'File'), h('a', { href: doc.file_url || doc.file }, doc.file))
+          h('div', null, h('div', { className: 'detail-label' }, 'File'),
+            fileUrl ? h('a', { href: fileUrl }, fileLabel) : h('div', { className: 'detail-value' }, fileLabel)
+          )
         ),
         message && h('div', { className: 'notice info' }, message),
         error && h('div', { className: 'notice error' }, error)

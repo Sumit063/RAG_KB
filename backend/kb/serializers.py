@@ -13,6 +13,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             'title',
             'file',
             'file_url',
+            'original_filename',
             'created_at',
             'status',
             'chunks_count',

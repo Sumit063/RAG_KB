@@ -22,8 +22,12 @@ def _batch_iter(items: List[str], batch_size: int):
 
 
 def index_document(document: Document) -> dict:
-    file_path = document.file.path
-    text = parsers.load_text(file_path)
+    if document.raw_text:
+        text = document.raw_text
+    elif document.file:
+        text = parsers.load_text(document.file.path)
+    else:
+        raise ValueError('No source text available for indexing.')
     chunks = chunking.chunk_text(text, settings.CHUNK_SIZE, settings.CHUNK_OVERLAP)
 
     existing_ids = list(document.chunks.values_list('vector_id', flat=True))
@@ -40,10 +44,11 @@ def index_document(document: Document) -> dict:
         vector_id = _chunk_vector_id(document.id, idx, chunk_text)
         ids.append(vector_id)
         documents.append(chunk_text)
+        filename = document.original_filename or (document.file.name if document.file else 'unknown')
         metadatas.append({
             'doc_id': document.id,
             'doc_title': document.title,
-            'doc_filename': document.file.name,
+            'doc_filename': filename,
             'chunk_index': idx,
         })
         chunk_records.append(Chunk(
@@ -70,7 +75,11 @@ def index_document(document: Document) -> dict:
         document.chunks_count = len(chunk_records)
         document.last_indexed_at = timezone.now()
         document.error_message = None
-        document.save(update_fields=['status', 'chunks_count', 'last_indexed_at', 'error_message'])
+        if settings.DISCARD_RAW_TEXT_AFTER_INDEX and document.raw_text:
+            document.raw_text = None
+            document.save(update_fields=['status', 'chunks_count', 'last_indexed_at', 'error_message', 'raw_text'])
+        else:
+            document.save(update_fields=['status', 'chunks_count', 'last_indexed_at', 'error_message'])
 
     return {'chunks': len(chunk_records)}
 

@@ -9,7 +9,9 @@ class Document(models.Model):
         FAILED = 'FAILED', 'Failed'
 
     title = models.CharField(max_length=255)
-    file = models.FileField(upload_to='docs/')
+    file = models.FileField(upload_to='docs/', null=True, blank=True)
+    original_filename = models.CharField(max_length=255, null=True, blank=True)
+    raw_text = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.UPLOADED)
     chunks_count = models.IntegerField(default=0)

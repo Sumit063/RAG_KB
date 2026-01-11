@@ -1,4 +1,5 @@
-﻿from django.shortcuts import get_object_or_404
+﻿from django.conf import settings
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
 from rest_framework import status
@@ -8,6 +9,7 @@ from rest_framework.views import APIView
 
 from .models import Document, IndexJob
 from .serializers import DocumentCreateSerializer, DocumentSerializer, IndexJobSerializer
+from .services import parsers, vector_store
 from .tasks import index_document_task
 
 
@@ -47,12 +49,31 @@ class DocumentListCreateView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = DocumentCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            doc = serializer.save()
-            output = DocumentSerializer(doc, context={'request': request}).data
-            return Response(output, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        title = request.data.get('title', '').strip()
+        file_obj = request.FILES.get('file')
+        if not title or not file_obj:
+            return Response({'detail': 'title and file are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if settings.STORE_UPLOADS_ON_DISK:
+            serializer = DocumentCreateSerializer(data=request.data)
+            if serializer.is_valid():
+                doc = serializer.save(original_filename=file_obj.name)
+                output = DocumentSerializer(doc, context={'request': request}).data
+                return Response(output, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            raw_text = parsers.load_text_from_file(file_obj, file_obj.name)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        doc = Document.objects.create(
+            title=title,
+            original_filename=file_obj.name,
+            raw_text=raw_text,
+        )
+        output = DocumentSerializer(doc, context={'request': request}).data
+        return Response(output, status=status.HTTP_201_CREATED)
 
 
 class DocumentDetailView(APIView):
@@ -61,10 +82,30 @@ class DocumentDetailView(APIView):
         serializer = DocumentSerializer(doc, context={'request': request})
         return Response(serializer.data)
 
+    def delete(self, request, pk):
+        doc = get_object_or_404(Document, pk=pk)
+        chunk_ids = list(doc.chunks.values_list('vector_id', flat=True))
+        try:
+            if chunk_ids:
+                vector_store.delete_chunks(chunk_ids)
+        except Exception:
+            return Response(
+                {'detail': 'Failed to delete document from vector store.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        if doc.file:
+            doc.file.delete(save=False)
+        doc.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class DocumentIndexView(APIView):
     def post(self, request, pk):
         doc = get_object_or_404(Document, pk=pk)
+        if not settings.ENABLE_REINDEX and doc.status == Document.Status.INDEXED:
+            return Response({'detail': 'Reindexing is disabled.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not doc.raw_text and not doc.file:
+            return Response({'detail': 'No source text available for indexing.'}, status=status.HTTP_400_BAD_REQUEST)
         async_result = index_document_task.delay(doc.id)
         return Response({'job_id': async_result.id, 'status': 'PENDING'})
 

@@ -118,6 +118,10 @@ OPENAI_BASE_URL = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 CHAT_MODEL = os.getenv('CHAT_MODEL', 'gpt-4o-mini')
 EMBED_MODEL = os.getenv('EMBED_MODEL', 'text-embedding-3-small')
 
+STORE_UPLOADS_ON_DISK = os.getenv('STORE_UPLOADS_ON_DISK', '1') == '1'
+ENABLE_REINDEX = os.getenv('ENABLE_REINDEX', '1') == '1'
+DISCARD_RAW_TEXT_AFTER_INDEX = os.getenv('DISCARD_RAW_TEXT_AFTER_INDEX', '0') == '1'
+
 CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', 900))
 CHUNK_OVERLAP = int(os.getenv('CHUNK_OVERLAP', 150))
 TOP_K_DEFAULT = int(os.getenv('TOP_K_DEFAULT', 6))

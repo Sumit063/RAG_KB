@@ -1,11 +1,22 @@
 #!/usr/bin/env sh
 set -e
 
+echo "[entrypoint] Starting web process"
+if [ -n "${DATABASE_URL:-}" ]; then
+  echo "[entrypoint] DATABASE_URL is set"
+else
+  echo "[entrypoint] DATABASE_URL is not set"
+fi
+
 if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+  echo "[entrypoint] Running migrations"
   python manage.py migrate --noinput
+else
+  echo "[entrypoint] Skipping migrations"
 fi
 
 if [ -n "${DJANGO_SUPERUSER_USERNAME:-}" ] && [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
+  echo "[entrypoint] Ensuring demo superuser exists"
   python manage.py shell <<'PY'
 import os
 from django.contrib.auth import get_user_model

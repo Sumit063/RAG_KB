@@ -14,6 +14,8 @@
     build: .
     env_file: .env
     command: celery -A rag_kb worker -l info
+    environment:
+      - RUN_MIGRATIONS=0
     volumes:
       - ./media:/app/media
       - ./chroma_store:/app/chroma_store

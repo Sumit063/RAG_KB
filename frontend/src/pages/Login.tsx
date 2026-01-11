@@ -15,8 +15,10 @@ import { loginWithToken } from '../api/client';
 import { useAuth } from '../auth';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const demoUsername = import.meta.env.VITE_DEMO_USERNAME || 'admin';
+  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD || 'StrongPassword123';
+  const [username, setUsername] = useState(demoUsername);
+  const [password, setPassword] = useState(demoPassword);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
